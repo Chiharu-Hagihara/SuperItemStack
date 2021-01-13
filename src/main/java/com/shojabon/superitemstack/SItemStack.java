@@ -1,7 +1,9 @@
 package com.shojabon.superitemstack;
 
 import com.google.common.collect.ForwardingMultimap;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -30,7 +32,7 @@ public class SItemStack {
     private List<String> lore = new ArrayList<>();
     private List<SEnchant> enchantments = new ArrayList<>();
     private List<ItemFlag> flags = new ArrayList<>();
-    private int damage = 0;
+    private int customModelData = 0;
     private boolean isGlowing = false;
     private boolean isUnbreakable = false;
     private boolean skullMode = false;
@@ -38,36 +40,37 @@ public class SItemStack {
     //skull builder part ↓
 
     private String url = null;
-    private String skullOwner = null;
+    private UUID skullOwner = null;
 
     /*
     Created By Sho in 2017/08/16 in Osaka
      */
 
-    public SItemStack(Material material){
+    public SItemStack(Material material) {
         item = new ItemStack(material);
     }
 
-    public SItemStack(String data){
+    public SItemStack(String data) {
         try {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
             BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
             ItemStack item = (ItemStack) dataInput.readObject();
             dataInput.close();
-             convertItemStackToSItemStack(item);
+            convertItemStackToSItemStack(item);
         } catch (Exception e) {
         }
     }
 
-    public SItemStack(ItemStack item){
+    public SItemStack(ItemStack item) {
         convertItemStackToSItemStack(item);
     }
 
-    private class SEnchant{
-        public SEnchant (Enchantment ench, int leve){
+    private class SEnchant {
+        public SEnchant(Enchantment ench, int leve) {
             this.ench = ench;
             this.level = leve;
         }
+
         Enchantment ench;
         int level;
     }
@@ -87,73 +90,73 @@ public class SItemStack {
     }
 
 
-    public SItemStack setAmount(int amount){
+    public SItemStack setAmount(int amount) {
         this.amount = amount;
         return this;
     }
 
-    public SItemStack setDisplayname(String name){
+    public SItemStack setDisplayname(String name) {
         this.displayName = name;
         return this;
     }
 
-    public SItemStack addLore(String lore){
+    public SItemStack addLore(String lore) {
         this.lore.add(lore);
         return this;
     }
 
-    public SItemStack setItemLore(List<String> lores){
+    public SItemStack setItemLore(List<String> lores) {
         lore = lores;
         return this;
     }
 
-    public SItemStack addEnchantment(Enchantment enchant, int level){
-        SEnchant s = new SEnchant(enchant,level);
+    public SItemStack addEnchantment(Enchantment enchant, int level) {
+        SEnchant s = new SEnchant(enchant, level);
         enchantments.add(s);
         return this;
     }
 
-    public SItemStack addFlag(ItemFlag itemFlag){
+    public SItemStack addFlag(ItemFlag itemFlag) {
         this.flags.add(itemFlag);
         return this;
     }
 
-    public SItemStack setFlags(List<ItemFlag> itemFlags){
+    public SItemStack setFlags(List<ItemFlag> itemFlags) {
         this.flags = flags;
         return this;
     }
 
-    public SItemStack setDamage(int damage){
-        this.damage = damage;
-        ItemStack item = new ItemStack(Material.AIR,1,(short) 1);
+    public SItemStack setDamage(int customModelData) {
+        this.customModelData = customModelData;
+        ItemStack item = new ItemStack(Material.AIR);
         return this;
     }
 
-    public SItemStack setGlowingEffect(boolean enabled){
+    public SItemStack setGlowingEffect(boolean enabled) {
         isGlowing = enabled;
         return this;
     }
 
-    public SItemStack setUnBreakable(boolean enabled){
+    public SItemStack setUnBreakable(boolean enabled) {
         isUnbreakable = enabled;
         return this;
     }
 
-    public SItemStack setSkullPlayer(String skullOwner){
+    public SItemStack setSkullPlayer(UUID skullOwner) {
         this.skullMode = true;
-        this.item = new ItemStack(Material.SKULL_ITEM,1,(short) 3);
+        this.item = new ItemStack(Material.PLAYER_HEAD);
         this.skullOwner = skullOwner;
         return this;
     }
 
-    public SItemStack setSkullUrl(String url){
+    public SItemStack setSkullUrl(String url) {
         this.skullMode = true;
-        this.item = new ItemStack(Material.SKULL_ITEM,1,(short) 3);
+        this.item = new ItemStack(Material.PLAYER_HEAD);
         this.url = url;
         return this;
     }
 
-    private void resetSettings(){
+    private void resetSettings() {
         item = null;
         amount = 0;
         item = null;
@@ -162,7 +165,7 @@ public class SItemStack {
         lore = new ArrayList<>();
         enchantments = new ArrayList<>();
         flags = new ArrayList<>();
-        damage = 0;
+        customModelData = 0;
         isGlowing = false;
         isUnbreakable = false;
         skullMode = false;
@@ -181,63 +184,62 @@ public class SItemStack {
             this.enchantments.add(se);
         }
         this.flags = (List<ItemFlag>) item.getItemMeta().getItemFlags();
-        this.damage = item.getDurability();
+        this.customModelData = item.getItemMeta().getCustomModelData();
         this.isGlowing = item.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS);
         this.isUnbreakable = item.getItemMeta().isUnbreakable();
 
         return this;
     }
 
-    public ItemStack build(){
+    public ItemStack build() {
         ItemStack item = this.item;
         item.setAmount(this.amount);
-        item.setDurability((short) this.damage);
-        if(!skullMode){
+        item.getItemMeta().setCustomModelData(customModelData);
+        if (!skullMode) {
             ItemMeta itemMeta = item.getItemMeta();
             itemMeta.setDisplayName(this.displayName);
-            if(!this.lore.isEmpty()){
+            if (!this.lore.isEmpty()) {
                 itemMeta.setLore(this.lore);
             }
             itemMeta.setUnbreakable(this.isUnbreakable);
-            for(int i = 0; i < this.enchantments.size();i ++){
-                itemMeta.addEnchant(this.enchantments.get(i).ench,this.enchantments.get(i).level,true);
+            for (int i = 0; i < this.enchantments.size(); i++) {
+                itemMeta.addEnchant(this.enchantments.get(i).ench, this.enchantments.get(i).level, true);
             }
-            for (int i = 0; i < this.flags.size();i++){
+            for (int i = 0; i < this.flags.size(); i++) {
                 itemMeta.addItemFlags(this.flags.get(i));
             }
-            if(this.isGlowing){
+            if (this.isGlowing) {
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                itemMeta.addEnchant(Enchantment.LURE, 1,true);
+                itemMeta.addEnchant(Enchantment.LURE, 1, true);
             }
             item.setItemMeta(itemMeta);
-        }else{
-            item.setDurability((short)3);
+        } else {
             SkullMeta itemMeta = (SkullMeta) item.getItemMeta();
-            if(skullOwner != null){
-                itemMeta.setOwner(this.skullOwner);
+            if (skullOwner != null) {
+                OfflinePlayer player = Bukkit.getOfflinePlayer(skullOwner);
+                itemMeta.setOwningPlayer(player);
             }
-            if(url != null){
+            if (url != null) {
                 loadProfile(itemMeta, url);
             }
-            if(!this.lore.isEmpty()){
+            if (!this.lore.isEmpty()) {
                 itemMeta.setLore(this.lore);
             }
             itemMeta.setUnbreakable(this.isUnbreakable);
-            for(int i = 0; i < this.enchantments.size();i ++){
-                itemMeta.addEnchant(this.enchantments.get(i).ench,this.enchantments.get(i).level,true);
+            for (int i = 0; i < this.enchantments.size(); i++) {
+                itemMeta.addEnchant(this.enchantments.get(i).ench, this.enchantments.get(i).level, true);
             }
-            for (int i = 0; i < this.flags.size();i++){
+            for (int i = 0; i < this.flags.size(); i++) {
                 itemMeta.addItemFlags(this.flags.get(i));
             }
-            if(this.isGlowing){
+            if (this.isGlowing) {
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                itemMeta.addEnchant(Enchantment.LURE, 1,true);
+                itemMeta.addEnchant(Enchantment.LURE, 1, true);
             }
             item.setItemMeta(itemMeta);
         }
         return item;
     }
-
 
 
     private void loadProfile(ItemMeta meta, String url) {
@@ -316,7 +318,8 @@ public class SItemStack {
             field.setAccessible(true);
             try {
                 field.set(instance, value);
-            } catch (IllegalAccessException ignored) {}
+            } catch (IllegalAccessException ignored) {
+            }
         }
 
         private static Field getDeclaredField(Class<?> clazz, String name) {
