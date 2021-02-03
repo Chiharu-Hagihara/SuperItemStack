@@ -126,9 +126,8 @@ public class SItemStack {
         return this;
     }
 
-    public SItemStack setDamage(int customModelData) {
+    public SItemStack setCMD(int customModelData) {
         this.customModelData = customModelData;
-        ItemStack item = new ItemStack(Material.AIR);
         return this;
     }
 
